@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Eco Orbit — مدار پاک</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#04070f; font-family:'Segoe UI',Tahoma,sans-serif; color:#fff; user-select:none; }
+  canvas { display:block; touch-action:none; }
+  #loader { position:fixed; inset:0; background:#04070f; display:flex; align-items:center; justify-content:center; z-index:50; color:#4cc9f0; font-size:16px; text-align:center; padding:20px; }
+
+  #hud { position:fixed; inset:0; pointer-events:none; padding:14px; display:none; }
+  #hud .row { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  #hud .left { display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; }
+  .pill { background:rgba(0,0,0,.5); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.15);
+          border-radius:14px; padding:8px 14px; font-size:15px; font-weight:700; display:flex; gap:8px; align-items:center; }
+  .iconbtn { pointer-events:auto; width:44px; height:44px; border-radius:12px;
+              background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.2);
+              color:#fff; font-size:20px; cursor:pointer; display:flex;
+              align-items:center; justify-content:center; backdrop-filter:blur(6px); }
+  .iconbtn:active { background:rgba(255,255,255,.15); }
+  #upgradeBtn { color:#ffd166; border-color:rgba(255,209,102,.5); }
+  #hpwrap { flex-direction:column; align-items:flex-start; gap:6px; }
+  .bar { width:130px; height:10px; background:rgba(255,255,255,.15); border-radius:6px; overflow:hidden; }
+  .bar > div { height:100%; width:100%; transition:width .2s; }
+  #hpfill { background:linear-gradient(90deg,#ff4d6d,#ffd166,#06d6a0); }
+  #trfill { background:linear-gradient(90deg,#4cc9f0,#06d6a0); width:0; }
+
+  #timerPill { display:none; background:rgba(0,0,0,.65); border:2px solid rgba(255,209,102,.6);
+               font-size:18px; font-variant-numeric:tabular-nums; transition:border-color .2s, color .2s; }
+  #timerPill.warn { border-color:rgba(255,77,109,.9); color:#ff4d6d;
+                     animation: timerPulse .6s infinite ease-in-out; }
+  @keyframes timerPulse {
+    0%,100% { transform:scale(1); }
+    50% { transform:scale(1.08); }
+  }
+
+  #controls { position:fixed; inset:0; pointer-events:none; display:none; z-index:5; }
+  .arrowbtn {
+    position:absolute; bottom:34px; width:88px; height:88px; border-radius:50%;
+    background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.3);
+    display:flex; align-items:center; justify-content:center; font-size:30px; line-height:1;
+    color:#fff; pointer-events:auto; touch-action:none;
+    transition:background .08s, transform .08s;
+  }
+  .arrowbtn.pressed { background:rgba(255,255,255,.55); transform:scale(0.92); }
+  #leftbtn { left:22px; }
+  #rightbtn { left:126px; }
+  #jumpbtn {
+    position:absolute; right:26px; bottom:40px; width:104px; height:104px; border-radius:50%;
+    background:rgba(6,214,160,.28); border:2px solid rgba(6,214,160,.75);
+    pointer-events:auto; display:flex; align-items:center; justify-content:center;
+    font-size:16px; font-weight:700; touch-action:none;
+    transition:background .08s, transform .08s;
+  }
+  #jumpbtn.pressed { background:rgba(6,214,160,.65); transform:scale(0.94); }
+
+  /* منو — اسکرولی */
+  #menu {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: radial-gradient(ellipse at 50% 40%, #1b2a4a 0%, #04070f 70%);
+    z-index: 20;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    text-align: center;
+    padding: 60px 20px 30px;
+  }
+
+#madeBy {
+  position: fixed;
+  bottom: 10px;
+  inset-inline-start: 14px;
+  font-size: 11px;
+  color: rgba(143, 163, 192, 0.7);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  z-index: 25;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6);
+}
+#madeBy span { color: #4cc9f0; font-weight: 700; }
+
+  #langBtn {
+    position: fixed; top: 16px; inset-inline-end: 16px;
+    pointer-events: auto; cursor: pointer;
+    background: rgba(0,0,0,.5); border: 1px solid rgba(76,201,240,.5);
+    color: #4cc9f0; border-radius: 12px; padding: 9px 16px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+    backdrop-filter: blur(6px); transition: transform .12s, background .12s;
+    z-index: 25;
+  }
+  #langBtn:hover { background: rgba(76,201,240,.15); }
+  #langBtn:active { transform: scale(.95); }
+
+  #menu h1 { font-size:40px; letter-spacing:3px; background:linear-gradient(90deg,#4cc9f0,#06d6a0,#ffd166);
+             -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:8px; }
+  #menu .sub { color:#8fa3c0; font-size:14px; margin-bottom:22px; }
+
+  /* بخش نام مستعار */
+  .nickname-section {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px;
+    padding: 12px 18px;
+    margin-bottom: 16px;
+    width: min(340px, 90vw);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .nickname-section label {
+    font-size: 12px;
+    color: #8fa3c0;
+    font-weight: 600;
+    text-align: center;
+  }
+  .nickname-section input {
+    background: rgba(0,0,0,.4);
+    border: 1px solid rgba(76,201,240,.3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .nickname-section input:focus {
+    border-color: rgba(76,201,240,.8);
+    background: rgba(0,0,0,.55);
+  }
+
+  .stat { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:16px;
+          padding:16px 30px; margin-bottom:20px; }
+  .stat .num { font-size:36px; font-weight:800; color:#ffd166; }
+  .stat .lbl { font-size:13px; color:#8fa3c0; margin-top:2px; }
+  .btn { pointer-events:auto; border:none; cursor:pointer; font-family:inherit; font-weight:700; font-size:18px;
+         padding:16px 48px; border-radius:16px; color:#04121a;
+         background:linear-gradient(135deg,#06d6a0,#4cc9f0); box-shadow:0 8px 24px rgba(6,214,160,.35);
+         transition:transform .12s; }
+  .btn:active { transform:scale(.96); }
+  .btn.small { font-size:14px; padding:11px 24px; margin-top:16px; background:rgba(255,255,255,.1); color:#fff;
+               box-shadow:none; border:1px solid rgba(255,255,255,.2); }
+  .btn.timed {
+    margin-top: 12px;
+    background: linear-gradient(135deg,#ff4d6d,#ffaa00);
+    box-shadow: 0 8px 24px rgba(255,77,109,.4);
+    color: #fff;
+  }
+
+  /* لیدربورد */
+  .leaderboard-section {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-top: 22px;
+    width: min(340px, 90vw);
+  }
+  .leaderboard-section h3 {
+    font-size: 14px;
+    color: #ffd166;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: 700;
+  }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 4px;
+    background: rgba(255,255,255,.03);
+  }
+  .lb-row:nth-child(1) { background: rgba(255,209,102,.18); color: #ffd166; font-weight: 700; }
+  .lb-row:nth-child(2) { background: rgba(200,200,200,.12); color: #e0e0e0; }
+  .lb-row:nth-child(3) { background: rgba(205,127,50,.12); color: #d4a373; }
+  .lb-rank { width: 20px; text-align: center; font-weight: 700; opacity: .85; }
+  .lb-name { flex: 1; text-align: start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-time { font-variant-numeric: tabular-nums; font-weight: 700; color: inherit; }
+  .lb-empty { text-align: center; color: #6f8199; font-size: 12px; padding: 8px 0; }
+
+  .hint { color:#6f8199; font-size:12px; margin-top:22px; line-height:1.8; max-width:340px; }
+
+  #ingameShop {
+    position:fixed; inset:0; display:none; align-items:flex-end; justify-content:center;
+    background:rgba(4,8,16,.72); backdrop-filter:blur(6px); z-index:17; padding:16px;
+  }
+  #ingameShop .igcard {
+    background:rgba(20,30,50,.98); border:1px solid rgba(255,255,255,.15);
+    border-radius:20px; padding:18px 16px; display:flex; flex-direction:column; gap:10px;
+    width:min(460px,96vw); max-height:82vh; overflow-y:auto;
+  }
+  .igcard .ighead { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .igcard h3 { color:#4cc9f0; font-size:18px; }
+  .igcard .igcoins { color:#ffd166; font-weight:700; font-size:16px; }
+  .igcard .igclose { background:rgba(255,255,255,.1); border:none; color:#fff; width:34px; height:34px;
+                     border-radius:10px; font-size:18px; cursor:pointer; }
+  .upg { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+         border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between;
+         align-items:center; gap:8px; }
+  .upg .info { text-align:start; flex:1; }
+  .upg .name { font-weight:700; font-size:13px; }
+  .upg .lvl { font-size:11px; color:#8fa3c0; margin-top:2px; }
+  .upg button { border:none; border-radius:8px; padding:8px 12px; font-family:inherit;
+                font-weight:700; font-size:12px; cursor:pointer; background:#ffd166; color:#1a1400; min-width:70px; }
+  .upg button:disabled { background:rgba(255,255,255,.12); color:#6b7a90; cursor:default; }
+
+  #pauseOverlay {
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(4,8,16,.85); backdrop-filter:blur(6px); z-index:18; padding:20px;
+  }
+  .pause-card {
+    background:rgba(20,30,50,.95); border:1px solid rgba(255,255,255,.15);
+    border-radius:20px; padding:32px 28px; display:flex; flex-direction:column; gap:10px;
+    text-align:center; min-width:260px; max-width:340px; width:100%;
+  }
+  .pause-card h2 { color:#4cc9f0; font-size:22px; margin-bottom:10px; }
+  .pause-card .btn { font-size:16px; padding:14px 24px; }
+
+  #hitFlash {
+    position:fixed; inset:0; pointer-events:none; z-index:9;
+    background:radial-gradient(circle at center, rgba(255,60,80,0.85), rgba(255,0,50,0.45));
+    opacity:0;
+  }
+
+  #explosionFlash {
+    position:fixed; inset:0; pointer-events:none; z-index:11;
+    background:radial-gradient(circle at center, rgba(255,220,120,1), rgba(255,80,30,0.95) 40%, rgba(120,0,0,0.6));
+    opacity:0;
+  }
+
+  #msg { position:fixed; top:38%; left:50%; transform:translate(-50%,-50%); font-size:28px; font-weight:800;
+         pointer-events:none; opacity:0; transition:opacity .3s, transform .3s; text-shadow:0 0 20px rgba(0,0,0,.85); z-index:10; text-align:center; }
+</style>
+</head>
+<body>
+<div id="loader" data-i18n="loading">در حال بارگذاری…</div>
+
+<div id="hud">
+  <div class="row">
+    <div class="left">
+      <button id="pauseBtn" class="iconbtn">☰</button>
+      <button id="upgradeBtn" class="iconbtn">🛠</button>
+      <div class="pill">💰 <span id="score">0</span></div>
+      <div class="pill" id="timerPill">⏱ <span id="timerVal">30.0</span></div>
+    </div>
+    <div class="pill" id="hpwrap">
+      <div style="display:flex; gap:8px; align-items:center;">❤️ <div class="bar"><div id="hpfill"></div></div></div>
+      <div style="display:flex; gap:8px; align-items:center;">🗑️ <div class="bar"><div id="trfill"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="controls">
+  <div id="leftbtn" class="arrowbtn">◀</div>
+  <div id="rightbtn" class="arrowbtn">▶</div>
+  <div id="jumpbtn" data-i18n="jump">پرش</div>
+</div>
+
+<div id="pauseOverlay">
+  <div class="pause-card">
+    <h2 data-i18n="paused">بازی متوقف شد</h2>
+    <button class="btn" id="resumeBtn" data-i18n="resume">ادامه بازی</button>
+    <button class="btn small" id="restartBtn" data-i18n="restart">🔄 شروع مجدد</button>
+    <button class="btn small" id="quitBtn" data-i18n="quit">بازگشت به منو</button>
+  </div>
+</div>
+
+<div id="ingameShop">
+  <div class="igcard">
+    <div class="ighead">
+      <h3 data-i18n="shopTitle">🛠 ارتقاء سریع</h3>
+      <div class="igcoins">💰 <span id="igCoins">0</span></div>
+      <button class="igclose" id="igClose">×</button>
+    </div>
+    <div id="igUpgList"></div>
+  </div>
+</div>
+
+<div id="hitFlash"></div>
+<div id="explosionFlash"></div>
+<div id="msg"></div>
+
+<div id="menu">
+  <button id="langBtn">EN</button>
+  <div id="madeBy">made by <span>Momasoja</span></div>
+  <h1>ECO ORBIT</h1>
+  <div class="sub" data-i18n="subtitle">مدار پاک — سیاره‌به‌سیاره تمیز کن</div>
+
+  <div class="nickname-section">
+    <label for="nicknameInput" data-i18n="nicknameLabel">نام مستعار</label>
+    <input id="nicknameInput" type="text" maxlength="15" data-i18n-placeholder="nicknamePlaceholder" placeholder="نام خود را وارد کنید">
+  </div>
+
+  <div class="stat">
+    <div class="num" id="cleanCount">0</div>
+    <div class="lbl" data-i18n="cleanLabel">بار کامل تمیز کردن سیاره</div>
+  </div>
+
+  <button class="btn" id="playBtn" data-i18n="startMission">شروع مأموریت</button>
+  <button class="btn timed" id="timedBtn" data-i18n="startTimed">⏱ حالت زمان‌دار (۳۰ ثانیه)</button>
+
+  <div class="leaderboard-section">
+    <h3 data-i18n="bestTimes">🏆 بهترین زمان‌ها</h3>
+    <div id="bestTimesList"></div>
+  </div>
+
+  <div class="hint" data-i18n="hint">
+    کیبورد: ← → حرکت، Space پرش، Esc منو<br>
+    لمسی: فلش‌های چپ/راست + دکمه پرش<br>
+    🌳 از روی درخت‌ها بپر — 💎 آشغال بنفش پرش ماکس می‌خواد
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+if (typeof THREE === 'undefined') {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>');
+}
+</script>
+<script>
+// ====== سیستم ترجمه ======
+const I18N = {
+  fa: {
+    loading: 'در حال بارگذاری…',
+    subtitle: 'مدار پاک — سیاره‌به‌سیاره تمیز کن',
+    cleanLabel: 'بار کامل تمیز کردن سیاره',
+    startMission: 'شروع مأموریت',
+    startTimed: '⏱ حالت زمان‌دار (۳۰ ثانیه)',
+    hint: 'کیبورد: ← → حرکت، Space پرش، Esc منو<br>لمسی: فلش‌های چپ/راست + دکمه پرش<br>🌳 از روی درخت‌ها بپر — 💎 آشغال بنفش پرش ماکس می‌خواد',
+    jump: 'پرش',
+    paused: 'بازی متوقف شد',
+    resume: 'ادامه بازی',
+    restart: '🔄 شروع مجدد',
+    quit: 'بازگشت به منو',
+    shopTitle: '🛠 ارتقاء سریع',
+    upgradeRadius: 'شعاع جمع‌آوری',
+    upgradeSpeed: 'سرعت حرکت',
+    upgradeJump: 'قدرت پرش',
+    level: 'سطح',
+    maxed: 'حداکثر',
+    failMsg: '💀 مأموریت شکست خورد',
+    winMsg: '🌍 سیاره تمیز شد!',
+    timeWinMsg: '🎉 نجات یافتی!',
+    newRecord: '🏆 رکورد جدید!',
+    timeUpMsg: '💥 وقت تموم شد — سیاره منفجر شد!',
+    radHit: '☢ -',
+    obstacleHit: '💥 -',
+    appleHeal: '🍎 +',
+    epicPickup: '💎 +',
+    toastLevel: 'سطح',
+    langBtnLabel: 'EN',
+    nicknameLabel: 'نام مستعار',
+    nicknamePlaceholder: 'نام خود را وارد کنید',
+    bestTimes: '🏆 بهترین زمان‌ها',
+    noRecords: 'هنوز رکوردی ثبت نشده',
+    secondsSuffix: ' ثانیه'
+  },
+  en: {
+    loading: 'Loading…',
+    subtitle: 'Eco Orbit — Clean the planet, one world at a time',
+    cleanLabel: 'Full planet cleanups',
+    startMission: 'Start Mission',
+    startTimed: '⏱ Timed Mode (30s)',
+    hint: 'Keyboard: ← → to move, Space to jump, Esc to pause<br>Touch: left/right arrows + jump button<br>🌳 Jump on trees — 💎 Purple trash needs max jump',
+    jump: 'JUMP',
+    paused: 'Game Paused',
+    resume: 'Resume Game',
+    restart: '🔄 Restart',
+    quit: 'Back to Menu',
+    shopTitle: '🛠 Quick Upgrade',
+    upgradeRadius: 'Collect Radius',
+    upgradeSpeed: 'Movement Speed',
+    upgradeJump: 'Jump Power',
+    level: 'Level',
+    maxed: 'MAX',
+    failMsg: '💀 Mission Failed',
+    winMsg: '🌍 Planet Cleaned!',
+    timeWinMsg: '🎉 You Survived!',
+    newRecord: '🏆 New Record!',
+    timeUpMsg: '💥 Time up — Planet Exploded!',
+    radHit: '☢ -',
+    obstacleHit: '💥 -',
+    appleHeal: '🍎 +',
+    epicPickup: '💎 +',
+    toastLevel: 'Lv',
+    langBtnLabel: 'فا',
+    nicknameLabel: 'Nickname',
+    nicknamePlaceholder: 'Enter your name',
+    bestTimes: '🏆 Best Times',
+    noRecords: 'No records yet',
+    secondsSuffix: 's'
+  }
+};
+
+let currentLang = 'fa';
+function loadLang() {
+  try {
+    const l = localStorage.getItem('ecoOrbit_lang');
+    if (l === 'en' || l === 'fa') return l;
+  } catch (e) {}
+  return 'fa';
+}
+function saveLang(l) {
+  try { localStorage.setItem('ecoOrbit_lang', l); } catch (e) {}
+}
+currentLang = loadLang();
+
+function t(key) {
+  return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.fa[key] || key);
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLang;
+  document.documentElement.dir = currentLang === 'fa' ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.innerHTML = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.placeholder = t(key);
+  });
+  const lb = document.getElementById('langBtn');
+  if (lb) lb.textContent = t('langBtnLabel');
+  const jb = document.getElementById('jumpbtn');
+  if (jb) jb.textContent = t('jump');
+  renderIngameShop();
+  renderBestTimes();
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'fa' ? 'en' : 'fa';
+  saveLang(currentLang);
+  applyLanguage();
+}
+
+// ====== نام مستعار ======
+const NICK_KEY = 'ecoOrbit_nickname';
+function loadNickname() {
+  try { return localStorage.getItem(NICK_KEY) || ''; } catch (e) { return ''; }
+}
+function saveNickname(n) {
+  try { localStorage.setItem(NICK_KEY, n); } catch (e) {}
+}
+
+// ====== رکوردهای بهترین زمان (محلی، ۵ تای برتر) ======
+const RECORDS_KEY = 'ecoOrbit_bestTimes';
+function loadBestTimes() {
+  try {
+    const raw = localStorage.getItem(RECORDS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr.slice(0, 5);
+    }
+  } catch (e) {}
+  return [];
+}
+function saveBestTimes(arr) {
+  try { localStorage.setItem(RECORDS_KEY, JSON.stringify(arr)); } catch (e) {}
+}
+function addBestTime(name, time) {
+  const list = loadBestTimes();
+  const prevBest = list.length > 0 ? list[0].time : Infinity;
+  list.push({ name: name || 'Player', time: time, date: Date.now() });
+  list.sort((a, b) => a.time - b.time);
+  const top5 = list.slice(0, 5);
+  saveBestTimes(top5);
+  return { list: top5, isNewBest: time < prevBest };
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
+
+function renderBestTimes() {
+  const container = document.getElementById('bestTimesList');
+  if (!container) return;
+  const list = loadBestTimes();
+  if (list.length === 0) {
+    container.innerHTML = `<div class="lb-empty">${t('noRecords')}</div>`;
+    return;
+  }
+  container.innerHTML = list.map((r, i) => `
+    <div class="lb-row">
+      <span class="lb-rank">${i + 1}</span>
+      <span class="lb-name">${escapeHtml(r.name)}</span>
+      <span class="lb-time">${r.time.toFixed(1)}${t('secondsSuffix')}</span>
+    </div>
+  `).join('');
+}
+
+// ====== تنظیمات ======
+const CFG = {
+  planetR: 26,
+  tubeR: 3.4,
+  playerR: 29.9,
+  gravity: 22,
+  jumpV: 10,
+  baseSpeed: 0.45,
+  airSpeedMult: 0.8,
+  speedPerLevel: 0.08,
+  collectR: 1.05,
+  scorePerTrash: 20,
+  hpMax: 100,
+  radDamage: 18,
+  appleHeal: 25,
+  camFitR: 16,
+  camZ: 0,
+  camFollow: 0.8,
+  jumpFollow: 0.7,
+  hitFreezeTime: 0.12,
+  magnetBase: 2.0,
+  magnetPerLvl: 0.25,
+  magnetHighCutoff: 2.0,
+  timedDuration: 30.0
+};
+
+const OBSTACLE = {
+  visualHeight: 1.0,
+  clearance: 1.0,
+  angularWidth: 0.025,
+  damage: 10,
+  knockback: 0.08,
+  cooldown: 0.8
+};
+
+const PLAYER_ANGULAR_R = 0.5 / CFG.playerR;
+
+// ====== ذخیره‌ی کلین‌ها ======
+const SAVE_KEY = 'ecoOrbit_v4';
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem('ecoOrbit_v3');
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && typeof s.cleans === 'number') return { cleans: s.cleans };
+    }
+  } catch (e) {}
+  return { cleans: 0 };
+}
+let save = loadSave();
+function writeSave() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+}
+
+let run = { coins: 0, upgrades: { radius: 0, speed: 0, jump: 0 } };
+
+// ====== صدا ======
+const Sound = (() => {
+  let ctx = null, musicOn = false, musicTimer = null;
+  function ensure() {
+    if (ctx) return ctx;
+    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { ctx = null; }
+    return ctx;
+  }
+  function beep(freq, dur, type, vol, slideTo) {
+    if (!ensure()) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, ctx.currentTime);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, ctx.currentTime + dur);
+    g.gain.setValueAtTime(vol || 0.25, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + dur + 0.02);
+  }
+  return {
+    resume() { ensure(); if (ctx && ctx.state === 'suspended') ctx.resume(); },
+    pickup() { beep(660, 0.10, 'sine', 0.25, 990); },
+    epic() { [523, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'triangle', 0.35), i * 70)); },
+    apple() { beep(520, 0.12, 'triangle', 0.3, 880); setTimeout(() => beep(880, 0.14, 'triangle', 0.25), 80); },
+    hurt() { beep(180, 0.22, 'sawtooth', 0.3, 80); },
+    jump() { beep(380, 0.10, 'sine', 0.18, 620); },
+    upgrade() { beep(440, 0.09, 'square', 0.2); setTimeout(() => beep(660, 0.09, 'square', 0.2), 90); setTimeout(() => beep(880, 0.15, 'square', 0.2), 180); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.25, 'triangle', 0.28), i * 130)); },
+    lose() { beep(400, 0.3, 'sawtooth', 0.3, 100); },
+    hit() { beep(140, 0.18, 'square', 0.35, 60); },
+    explode() {
+      if (!ensure()) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const bufferSize = ctx.sampleRate * 0.6;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.5, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      src.connect(g).connect(ctx.destination);
+      src.start();
+      const o = ctx.createOscillator(), g2 = ctx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(120, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.5);
+      g2.gain.setValueAtTime(0.4, ctx.currentTime);
+      g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      o.connect(g2).connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.55);
+    },
+    tick() { beep(880, 0.06, 'square', 0.15); },
+    startMusic() {
+      if (musicOn || !ensure()) return;
+      musicOn = true;
+      const scale = [220, 247, 262, 294, 330, 392, 440];
+      let i = 0;
+      musicTimer = setInterval(() => {
+        if (!musicOn) return;
+        beep(scale[Math.floor(Math.random() * scale.length)] / 2, 0.9, 'sine', 0.05);
+        if (i % 2 === 0) beep(scale[Math.floor(Math.random() * scale.length)] * 2, 0.5, 'triangle', 0.04);
+        i++;
+      }, 950);
+    },
+    stopMusic() { musicOn = false; if (musicTimer) clearInterval(musicTimer); }
+  };
+})();
+
+// ====== حالت ======
+const state = {
+  running: false,
+  paused: false,
+  shopOpen: false,
+  angle: -Math.PI / 2,
+  jumpH: 0,
+  velY: 0,
+  grounded: true,
+  hp: CFG.hpMax,
+  cleaned: 0,
+  totalTrash: 0,
+  trashLeft: 0,
+  moveInput: 0,
+  hitFreeze: 0,
+  timedMode: false,
+  timer: 0,
+  lastTickSecond: 0
+};
+
+let renderer, scene, camera, clock;
+let planetGroup, playerGroup;
+let collectibles = [];
+let obstacles = [];
+let trees = [];
+let stars;
+let cameraShake = 0;
+let camCurrentY = 0;
+
+// ====== سه‌بعدی ======
+function initThree() {
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.insertBefore(renderer.domElement, document.body.firstChild);
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x04070f);
+  scene.fog = new THREE.Fog(0x04070f, 160, 380);
+
+  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 800);
+  camera.lookAt(0, 0, 0);
+
+  clock = new THREE.Clock();
+  updateCameraSize();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    updateCameraSize();
+  });
+}
+
+function updateCameraSize() {
+  const fovY = camera.fov * Math.PI / 180;
+  const aspect = camera.aspect || 1;
+  const minDim = Math.min(1, aspect);
+  CFG.camZ = CFG.camFitR / (Math.tan(fovY / 2) * minDim) * 1.08;
+}
+
+function buildStars() {
+  const geo = new THREE.BufferGeometry();
+  const n = 1600;
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const r = 180 + Math.random() * 280;
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    pos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+    pos[i * 3 + 1] = r * Math.cos(ph);
+    pos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.4, sizeAttenuation: true, transparent: true, opacity: 0.85 });
+  stars = new THREE.Points(geo, mat);
+  scene.add(stars);
+}
+
+const PALETTES = [
+  { planet: 0x2d6a4f, deco: 0x74c69d, glow: 0x06d6a0 },
+  { planet: 0x6a4c93, deco: 0xc77dff, glow: 0x9d4edd },
+  { planet: 0x1b7f79, deco: 0x00d9c0, glow: 0x06d6a0 },
+  { planet: 0x7a5c2e, deco: 0xd4a373, glow: 0xffb703 },
+  { planet: 0x1b4332, deco: 0x40916c, glow: 0x95d5b2 },
+  { planet: 0x3a0ca3, deco: 0x7209b7, glow: 0x4361ee },
+  { planet: 0x4a1942, deco: 0xc9184a, glow: 0xff4d6d }
+];
+const APPLE_COLORS = [0xef233c, 0xff006e, 0xf72585];
+
+function buildPlanet(pal) {
+  planetGroup = new THREE.Group();
+  const geo = new THREE.TorusGeometry(CFG.planetR, CFG.tubeR, 28, 150);
+  const mat = new THREE.MeshStandardMaterial({ color: pal.planet, roughness: 0.82, metalness: 0.18 });
+  const torus = new THREE.Mesh(geo, mat);
+  torus.castShadow = true;
+  torus.receiveShadow = true;
+  planetGroup.add(torus);
+
+  const glowGeo = new THREE.TorusGeometry(CFG.planetR, CFG.tubeR + 0.14, 16, 150);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: pal.glow, transparent: true, opacity: 0.22,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  planetGroup.add(new THREE.Mesh(glowGeo, glowMat));
+
+  const decoCount = 70;
+  for (let i = 0; i < decoCount; i++) {
+    const a = (i / decoCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.04;
+    const r = CFG.planetR + CFG.tubeR + 0.03;
+    const size = 0.18 + Math.random() * 0.28;
+    const dGeo = Math.random() < 0.5
+      ? new THREE.ConeGeometry(size, size * 2, 5)
+      : new THREE.IcosahedronGeometry(size, 0);
+    const dMat = new THREE.MeshStandardMaterial({ color: pal.deco, roughness: 0.9, flatShading: true });
+    const deco = new THREE.Mesh(dGeo, dMat);
+    deco.position.set(Math.cos(a) * r, Math.sin(a) * r, 0);
+    deco.lookAt(0, 0, 0);
+    deco.rotateX(Math.PI / 2);
+    deco.castShadow = true;
+    planetGroup.add(deco);
+  }
+  scene.add(planetGroup);
+}
+
+function buildPlayer() {
+  playerGroup = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 22, 22),
+    new THREE.MeshStandardMaterial({ color: 0x4cc9f0, roughness: 0.3, metalness: 0.25, emissive: 0x1a5e7a, emissiveIntensity: 0.5 })
+  );
+  body.castShadow = true;
+  playerGroup.add(body);
+
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x0b132b });
+  const eyeGeo = new THREE.SphereGeometry(0.1, 10, 10);
+  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeL.position.set(-0.17, 0.14, 0.42);
+  playerGroup.add(eyeL);
+  const eyeR = eyeL.clone();
+  eyeR.position.x = 0.17;
+  playerGroup.add(eyeR);
+
+  const ant = new THREE.Mesh(
+    new THREE.SphereGeometry(0.1, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xffd166, emissiveIntensity: 0.7 })
+  );
+  ant.position.set(0, 0.56, 0);
+  playerGroup.add(ant);
+
+  scene.add(playerGroup);
+}
+
+function buildLights() {
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const key = new THREE.DirectionalLight(0xfff3d6, 1.05);
+  key.position.set(45, 60, 50);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.camera.near = 1;
+  key.shadow.camera.far = 180;
+  key.shadow.camera.left = -55;
+  key.shadow.camera.right = 55;
+  key.shadow.camera.top = 55;
+  key.shadow.camera.bottom = -55;
+  scene.add(key);
+  const rim = new THREE.PointLight(0x4cc9f0, 1.0, 220); rim.position.set(-55, -30, 55); scene.add(rim);
+  const rim2 = new THREE.PointLight(0xff4d6d, 0.6, 220); rim2.position.set(55, 35, -30); scene.add(rim2);
+}
+
+// ====== ابزار ======
+function normalizeAngle(a) {
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+
+function getTreeFloorAt(angle) {
+  let h = 0;
+  for (const t of trees) {
+    const da = normalizeAngle(angle - t.angle);
+    if (Math.abs(da) < t.width) h = Math.max(h, t.height);
+  }
+  return h;
+}
+
+// ====== ساخت جهان ======
+function buildWorld() {
+  while (scene.children.length) scene.remove(scene.children[0]);
+  collectibles = [];
+  obstacles = [];
+  trees = [];
+
+  const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+  buildStars();
+  buildLights();
+  buildPlanet(pal);
+  buildPlayer();
+
+  state.angle = -Math.PI / 2;
+  state.jumpH = 0;
+  state.velY = 0;
+  state.grounded = true;
+  state.hp = CFG.hpMax;
+  state.cleaned = 0;
+  state.moveInput = 0;
+  state.paused = false;
+  state.shopOpen = false;
+  state.hitFreeze = 0;
+  state.lastTickSecond = 0;
+  run.coins = 0;
+  run.upgrades = { radius: 0, speed: 0, jump: 0 };
+  camCurrentY = Math.sin(state.angle) * CFG.playerR * CFG.camFollow;
+
+  const baseTrashCount = 28 + Math.floor(Math.random() * 11);
+  const epicCount = state.timedMode ? 0 : (2 + Math.floor(Math.random() * 2));
+  state.totalTrash = baseTrashCount + epicCount;
+  state.trashLeft = baseTrashCount + epicCount;
+
+  const usedAngles = [];
+  function randomAngleAway(minSep = 0.1) {
+    for (let t = 0; t < 80; t++) {
+      const a = Math.random() * Math.PI * 2;
+      let minD = Math.abs(normalizeAngle(a - (-Math.PI / 2)));
+      for (const u of usedAngles) minD = Math.min(minD, Math.abs(normalizeAngle(a - u)));
+      if (minD > minSep) { usedAngles.push(a); return a; }
+    }
+    const a = Math.random() * Math.PI * 2;
+    usedAngles.push(a);
+    return a;
+  }
+
+  if (state.timedMode) {
+    for (let i = 0; i < baseTrashCount; i++) {
+      const a = randomAngleAway();
+      const isRad = Math.random() < 0.3;
+      spawnTrash(a, 1.5, isRad);
+    }
+  } else {
+    const heights = [1.5, 2.5, 3.5, 4.5];
+    for (let i = 0; i < baseTrashCount; i++) {
+      const a = randomAngleAway();
+      const isRad = Math.random() < 0.3;
+      const r = Math.random();
+      let h;
+      if (r < 0.55) h = heights[0];
+      else if (r < 0.78) h = heights[1];
+      else if (r < 0.93) h = heights[2];
+      else h = heights[3];
+      spawnTrash(a, h, isRad);
+    }
+    for (let i = 0; i < epicCount; i++) {
+      const a = randomAngleAway(0.4);
+      spawnEpicTrash(a);
+    }
+  }
+
+  for (let i = 0; i < 6; i++) {
+    const a = randomAngleAway();
+    const h = Math.random() < 0.7 ? 1.5 : 2.5;
+    spawnApple(a, h);
+  }
+
+  const obstacleAngles = [];
+  const obstacleCount = state.timedMode
+    ? (8 + Math.floor(Math.random() * 3))
+    : (4 + Math.floor(Math.random() * 3));
+  for (let i = 0; i < obstacleCount; i++) {
+    for (let t = 0; t < 60; t++) {
+      const a = Math.random() * Math.PI * 2;
+      let ok = Math.abs(normalizeAngle(a - (-Math.PI / 2))) > 0.5;
+      for (const oa of obstacleAngles) if (Math.abs(normalizeAngle(a - oa)) < 0.28) ok = false;
+      if (ok) { obstacleAngles.push(a); spawnObstacle(a); break; }
+    }
+  }
+
+  const treeAngles = [];
+  const treeCount = 5 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < treeCount; i++) {
+    for (let t = 0; t < 80; t++) {
+      const a = Math.random() * Math.PI * 2;
+      let ok = Math.abs(normalizeAngle(a - (-Math.PI / 2))) > 0.45;
+      for (const ta of treeAngles) if (Math.abs(normalizeAngle(a - ta)) < 0.28) ok = false;
+      for (const oa of obstacleAngles) if (Math.abs(normalizeAngle(a - oa)) < 0.22) ok = false;
+      if (ok) { treeAngles.push(a); spawnTree(a); break; }
+    }
+  }
+
+  updatePlayerTransform();
+  updateHUD();
+  updateTimerHUD();
+}
+
+function heightCoinMultiplier(h) {
+  if (h >= 6) return 5;
+  if (h >= 4) return 3;
+  if (h >= 3) return 2.5;
+  if (h >= 2) return 2;
+  if (h >= 1.6) return 1.5;
+  return 1;
+}
+
+function spawnTrash(angle, height, isRad) {
+  const radius = CFG.playerR + height;
+  let mesh;
+  if (isRad) {
+    mesh = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.42, 0),
+      new THREE.MeshStandardMaterial({ color: 0x39ff14, emissive: 0x39ff14, emissiveIntensity: 0.9, roughness: 0.4, metalness: 0.2, flatShading: true })
+    );
+  } else {
+    mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.52, 0.52, 0.52),
+      new THREE.MeshStandardMaterial({ color: 0xd0d0d0, roughness: 0.8, metalness: 0.15, flatShading: true })
+    );
+    mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+  }
+  mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
+  mesh.castShadow = true;
+
+  let beam = null;
+  if (height > CFG.magnetHighCutoff) {
+    let beamColor = 0x4cc9f0;
+    if (height >= 4) beamColor = 0xff4d6d;
+    else if (height >= 3) beamColor = 0xffd166;
+    beam = makeBeam(angle, height, beamColor, false);
+  }
+
+  mesh.userData = {
+    angle, baseRadius: radius, type: isRad ? 'rad' : 'trash',
+    phase: Math.random() * Math.PI * 2, offX: 0, offY: 0,
+    height, isHigh: height > CFG.magnetHighCutoff, beam, epic: false
+  };
+  scene.add(mesh);
+  collectibles.push(mesh);
+}
+
+function spawnEpicTrash(angle) {
+  const height = 7;
+  const radius = CFG.playerR + height;
+  const mesh = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.6, 0),
+    new THREE.MeshStandardMaterial({
+      color: 0xb5179e, emissive: 0xe0aaff, emissiveIntensity: 1.2,
+      roughness: 0.2, metalness: 0.7, flatShading: true
+    })
+  );
+  mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
+  mesh.castShadow = true;
+  const beam = makeBeam(angle, height, 0xb5179e, true);
+  mesh.userData = {
+    angle, baseRadius: radius, type: 'trash',
+    phase: Math.random() * Math.PI * 2, offX: 0, offY: 0,
+    height, isHigh: true, beam, epic: true
+  };
+  scene.add(mesh);
+  collectibles.push(mesh);
+}
+
+function makeBeam(angle, height, color, thick) {
+  const w = thick ? 0.1 : 0.055;
+  const geo = new THREE.CylinderGeometry(w, w, height, thick ? 8 : 6);
+  const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: thick ? 0.65 : 0.42 });
+  const beam = new THREE.Mesh(geo, mat);
+  const midR = CFG.playerR + height / 2;
+  beam.position.set(Math.cos(angle) * midR, Math.sin(angle) * midR, 0);
+  beam.rotation.z = angle - Math.PI / 2;
+  scene.add(beam);
+  return beam;
+}
+
+function spawnApple(angle, height) {
+  const radius = CFG.playerR + height;
+  const color = APPLE_COLORS[Math.floor(Math.random() * APPLE_COLORS.length)];
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.36, 12, 12),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5, roughness: 0.3, metalness: 0.1 })
+  );
+  mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
+  mesh.castShadow = true;
+  mesh.userData = {
+    angle, baseRadius: radius, type: 'apple',
+    phase: Math.random() * Math.PI * 2, offX: 0, offY: 0, height, isHigh: false, beam: null, epic: false
+  };
+  scene.add(mesh);
+  collectibles.push(mesh);
+}
+
+function spawnObstacle(angle) {
+  const h = OBSTACLE.visualHeight;
+  const radius = CFG.playerR + h / 2;
+
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xffaa00, transparent: true, opacity: 0.55,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.95, 20), ringMat);
+  ring.position.set(Math.cos(angle) * (CFG.playerR + 0.06), Math.sin(angle) * (CFG.playerR + 0.06), 0.01);
+  scene.add(ring);
+
+  const geo = new THREE.ConeGeometry(0.55, h, 6);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xff6600,
+    emissive: 0xff6600,
+    emissiveIntensity: 0.9,
+    roughness: 0.3,
+    metalness: 0.4,
+    flatShading: true
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
+  mesh.rotation.z = angle - Math.PI / 2;
+  mesh.castShadow = true;
+  scene.add(mesh);
+
+  const beamH = 2.5;
+  const beamGeo = new THREE.CylinderGeometry(0.09, 0.09, beamH, 6);
+  const beamMat = new THREE.MeshBasicMaterial({
+    color: 0xffaa00, transparent: true, opacity: 0.5,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const beam = new THREE.Mesh(beamGeo, beamMat);
+  const beamR = CFG.playerR + beamH / 2;
+  beam.position.set(Math.cos(angle) * beamR, Math.sin(angle) * beamR, 0);
+  beam.rotation.z = angle - Math.PI / 2;
+  scene.add(beam);
+
+  mesh.userData = {
+    type: 'obstacle', angle,
+    width: OBSTACLE.angularWidth,
+    height: OBSTACLE.clearance,
+    cooldown: 0,
+    ring, beam, mat, ringMat, beamMat,
+    pulsePhase: Math.random() * Math.PI * 2
+  };
+  scene.add(mesh);
+  obstacles.push(mesh);
+}
+
+function spawnTree(angle) {
+  const treeHeights = [2.0, 2.5, 3.0];
+  const height = treeHeights[Math.floor(Math.random() * treeHeights.length)];
+
+  const trunkH = height * 0.3;
+  const trunkR = CFG.playerR + trunkH / 2;
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.38, trunkH, 7),
+    new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.95, flatShading: true })
+  );
+  trunk.position.set(Math.cos(angle) * trunkR, Math.sin(angle) * trunkR, 0);
+  trunk.rotation.z = angle - Math.PI / 2;
+  trunk.castShadow = true;
+  scene.add(trunk);
+
+  const layers = [
+    { r: 0.85, base: 0.15 * height, top: 0.55 * height, color: 0x145a32 },
+    { r: 0.62, base: 0.40 * height, top: 0.80 * height, color: 0x1e8449 },
+    { r: 0.40, base: 0.65 * height, top: height,        color: 0x28b463 }
+  ];
+  for (const L of layers) {
+    const lh = L.top - L.base;
+    const lc = (L.top + L.base) / 2;
+    const cR = CFG.playerR + lc;
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(L.r, lh, 8),
+      new THREE.MeshStandardMaterial({
+        color: L.color,
+        emissive: L.color,
+        emissiveIntensity: 0.18,
+        roughness: 0.85,
+        flatShading: true
+      })
+    );
+    cone.position.set(Math.cos(angle) * cR, Math.sin(angle) * cR, 0);
+    cone.rotation.z = angle - Math.PI / 2;
+    cone.castShadow = true;
+    scene.add(cone);
+  }
+
+  const topR = CFG.playerR + height - 0.08;
+  const top = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 10, 10),
+    new THREE.MeshStandardMaterial({
+      color: 0x2ecc71, emissive: 0x2ecc71, emissiveIntensity: 0.4, roughness: 0.7
+    })
+  );
+  top.position.set(Math.cos(angle) * topR, Math.sin(angle) * topR, 0);
+  scene.add(top);
+
+  trees.push({ angle, height, width: 0.035 });
+}
+
+// ====== بازیکن ======
+function updatePlayerTransform() {
+  if (!playerGroup) return;
+  const r = CFG.playerR + state.jumpH;
+  playerGroup.position.set(Math.cos(state.angle) * r, Math.sin(state.angle) * r, 0);
+  if (Math.abs(state.moveInput) > 0.05) {
+    playerGroup.rotation.z = Math.sin(clock.elapsedTime * 12) * 0.14 * Math.sign(state.moveInput);
+  } else {
+    playerGroup.rotation.z *= 0.85;
+  }
+}
+
+function updatePlayer(dt) {
+  let input = 0;
+  if (keys.left) input -= 1;
+  if (keys.right) input += 1;
+  input = Math.max(-1, Math.min(1, input));
+  state.moveInput = input;
+
+  const airMult = state.grounded ? 1 : CFG.airSpeedMult;
+  const speed = (CFG.baseSpeed + run.upgrades.speed * CFG.speedPerLevel) * airMult;
+  state.angle = normalizeAngle(state.angle + input * speed * dt);
+
+  const floor = getTreeFloorAt(state.angle);
+
+  if (!state.grounded) {
+    const prevJumpH = state.jumpH;
+    state.velY -= CFG.gravity * dt;
+    state.jumpH += state.velY * dt;
+
+    if (state.velY < 0 && prevJumpH >= floor && state.jumpH <= floor) {
+      state.jumpH = floor;
+      state.velY = 0;
+      state.grounded = true;
+    } else if (state.jumpH <= 0) {
+      state.jumpH = 0;
+      state.velY = 0;
+      state.grounded = true;
+    }
+  } else {
+    if (state.jumpH > floor + 0.05) {
+      state.grounded = false;
+      state.velY = 0;
+    }
+  }
+
+  updatePlayerTransform();
+  checkObstacleCollisions();
+}
+
+function checkObstacleCollisions() {
+  for (const obs of obstacles) {
+    const ud = obs.userData;
+    if (ud.cooldown > 0) continue;
+    const da = normalizeAngle(state.angle - ud.angle);
+    const totalWidth = ud.width + PLAYER_ANGULAR_R;
+    if (Math.abs(da) < totalWidth && state.jumpH < ud.height) {
+      const dir = Math.sign(da) || 1;
+      state.angle = normalizeAngle(state.angle + dir * OBSTACLE.knockback);
+      state.hp -= OBSTACLE.damage;
+      ud.cooldown = OBSTACLE.cooldown;
+      cameraShake = 0.3;
+      state.hitFreeze = 0.08;
+      Sound.hit();
+      showMsg(t('obstacleHit') + OBSTACLE.damage, '#ff4d6d');
+      updateHUD();
+      if (state.hp <= 0) { state.hp = 0; updateHUD(); gameOver(); return; }
+      updatePlayerTransform();
+      break;
+    }
+  }
+}
+
+function updateObstacleCooldowns(dt) {
+  for (const obs of obstacles) {
+    if (obs.userData.cooldown > 0) obs.userData.cooldown -= dt;
+  }
+}
+
+function animateObstacles(dt) {
+  for (const obs of obstacles) {
+    const ud = obs.userData;
+    ud.pulsePhase += dt * 4;
+    const pulse = 0.5 + 0.5 * Math.sin(ud.pulsePhase);
+    ud.mat.emissiveIntensity = 0.7 + pulse * 0.7;
+    ud.ringMat.opacity = 0.35 + pulse * 0.35;
+    ud.ring.scale.setScalar(1 + pulse * 0.15);
+    ud.beamMat.opacity = 0.3 + pulse * 0.35;
+  }
+}
+
+// ====== تایمر ======
+function updateTimer(dt) {
+  if (!state.timedMode) return;
+  state.timer -= dt;
+
+  const tp = document.getElementById('timerPill');
+  const tv = document.getElementById('timerVal');
+
+  if (state.timer <= 10) {
+    tp.classList.add('warn');
+  } else {
+    tp.classList.remove('warn');
+  }
+
+  tv.textContent = Math.max(0, state.timer).toFixed(1);
+
+  const sec = Math.ceil(state.timer);
+  if (state.timer <= 5 && state.timer > 0 && sec !== state.lastTickSecond) {
+    state.lastTickSecond = sec;
+    Sound.tick();
+  }
+
+  if (state.timer <= 0) {
+    state.timer = 0;
+    planetExploded();
+  }
+}
+
+function updateTimerHUD() {
+  const tp = document.getElementById('timerPill');
+  const tv = document.getElementById('timerVal');
+  if (state.timedMode) {
+    tp.style.display = 'flex';
+    tv.textContent = Math.max(0, state.timer).toFixed(1);
+  } else {
+    tp.style.display = 'none';
+  }
+}
+
+// ====== آیتم‌ها ======
+function updateCollectibles(dt) {
+  const px = playerGroup.position.x;
+  const py = playerGroup.position.y;
+  const cr = CFG.collectR + run.upgrades.radius * 0.25;
+  const magnetR = CFG.magnetBase + run.upgrades.radius * CFG.magnetPerLvl;
+
+  for (let i = collectibles.length - 1; i >= 0; i--) {
+    if (!state.running || state.paused || state.shopOpen) return;
+    const c = collectibles[i];
+    const ud = c.userData;
+
+    ud.phase += dt * 1.6;
+    const lift = Math.sin(ud.phase) * 0.13;
+    const r = ud.baseRadius + lift;
+    const baseX = Math.cos(ud.angle) * r;
+    const baseY = Math.sin(ud.angle) * r;
+
+    const curX = baseX + ud.offX;
+    const curY = baseY + ud.offY;
+    const dx = px - curX;
+    const dy = py - curY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    const useMagnet = !ud.isHigh;
+    if (useMagnet && dist < magnetR) {
+      const pull = (1 - dist / magnetR) * 12 * dt;
+      ud.offX += dx * pull;
+      ud.offY += dy * pull;
+    } else {
+      ud.offX *= (1 - dt * 3);
+      ud.offY *= (1 - dt * 3);
+    }
+
+    c.position.set(baseX + ud.offX, baseY + ud.offY, 0);
+    c.rotation.y += dt * 1.4;
+    c.rotation.x += dt * 0.7;
+    if (ud.epic) c.rotation.z += dt * 2;
+
+    if (dist < cr) collectItem(c, i);
+  }
+}
+
+function collectItem(c, index) {
+  const ud = c.userData;
+  const type = ud.type;
+  const radiusBonus = run.upgrades.radius * 2;
+
+  if (type === 'trash') {
+    const mult = heightCoinMultiplier(ud.height);
+    const gain = Math.floor((CFG.scorePerTrash + radiusBonus) * mult);
+    run.coins += gain;
+    state.cleaned++;
+    state.trashLeft--;
+    if (ud.epic) {
+      Sound.epic();
+      showMsg(t('epicPickup') + gain, '#e0aaff');
+      cameraShake = 0.15;
+    } else {
+      Sound.pickup();
+      showMsg('+' + gain + (mult > 1 ? ' ⭐' : ''), mult >= 2.5 ? '#ffd166' : '#06d6a0');
+    }
+  } else if (type === 'rad') {
+    state.hp -= CFG.radDamage;
+    state.cleaned++;
+    state.trashLeft--;
+    Sound.hurt();
+    showMsg(t('radHit') + CFG.radDamage, '#ff4d6d');
+    cameraShake = 0.35;
+    state.hitFreeze = CFG.hitFreezeTime;
+    flashHit();
+    if (state.hp <= 0) {
+      state.hp = 0;
+      updateHUD();
+      removeCollectible(c);
+      collectibles.splice(index, 1);
+      gameOver();
+      return;
+    }
+  } else if (type === 'apple') {
+    state.hp = Math.min(CFG.hpMax, state.hp + CFG.appleHeal);
+    Sound.apple();
+    showMsg(t('appleHeal') + CFG.appleHeal, '#ffd166');
+  }
+
+  removeCollectible(c);
+  collectibles.splice(index, 1);
+  updateHUD();
+
+  if (state.trashLeft <= 0 && state.running) planetCleaned();
+}
+
+function removeCollectible(c) {
+  scene.remove(c);
+  if (c.userData.beam) scene.remove(c.userData.beam);
+}
+
+function flashHit() {
+  const f = document.getElementById('hitFlash');
+  f.style.transition = 'none';
+  f.style.opacity = '0.85';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      f.style.transition = 'opacity 0.45s ease-out';
+      f.style.opacity = '0';
+    });
+  });
+}
+
+function flashExplosion() {
+  const f = document.getElementById('explosionFlash');
+  f.style.transition = 'none';
+  f.style.opacity = '1';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      f.style.transition = 'opacity 1.0s ease-out';
+      f.style.opacity = '0';
+    });
+  });
+}
+
+function showMsg(text, color) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.style.color = color;
+  el.style.opacity = 1;
+  el.style.transform = 'translate(-50%,-70%) scale(1.1)';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    el.style.opacity = 0;
+    el.style.transform = 'translate(-50%,-50%) scale(1)';
+  }, 650);
+}
+
+function updateHUD() {
+  document.getElementById('score').textContent = run.coins;
+  document.getElementById('hpfill').style.width = Math.max(0, state.hp / CFG.hpMax * 100) + '%';
+  const pct = state.totalTrash > 0 ? (state.cleaned / state.totalTrash * 100) : 0;
+  document.getElementById('trfill').style.width = Math.min(100, pct) + '%';
+}
+
+// ====== پایان ======
+function showMenuScreen() {
+  document.getElementById('menu').style.display = 'flex';
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('pauseOverlay').style.display = 'none';
+  document.getElementById('ingameShop').style.display = 'none';
+  document.getElementById('cleanCount').textContent = save.cleans;
+  renderBestTimes();
+  state.paused = false;
+  state.shopOpen = false;
+}
+
+function gameOver() {
+  if (!state.running) return;
+  state.running = false;
+  Sound.stopMusic();
+  Sound.lose();
+  showMsg(t('failMsg'), '#ff4d6d');
+  setTimeout(showMenuScreen, 1400);
+}
+
+function planetCleaned() {
+  if (!state.running) return;
+  state.running = false;
+  Sound.stopMusic();
+  Sound.win();
+  save.cleans += 1;
+  writeSave();
+  if (state.timedMode) {
+    const timeUsed = CFG.timedDuration - Math.max(0, state.timer);
+    const nick = loadNickname().trim() || 'Player';
+    const result = addBestTime(nick, timeUsed);
+    const displayTime = timeUsed.toFixed(1) + t('secondsSuffix');
+    const msg = result.isNewBest
+      ? t('newRecord') + ' ⏱ ' + displayTime
+      : t('timeWinMsg') + ' ⏱ ' + displayTime;
+    showMsg(msg, result.isNewBest ? '#ffd166' : '#06d6a0');
+    setTimeout(showMenuScreen, 2000);
+  } else {
+    showMsg(t('winMsg'), '#06d6a0');
+    setTimeout(showMenuScreen, 1800);
+  }
+}
+
+function planetExploded() {
+  if (!state.running) return;
+  state.running = false;
+  Sound.stopMusic();
+  Sound.explode();
+  flashExplosion();
+  cameraShake = 1.5;
+  showMsg(t('timeUpMsg'), '#ff4d6d');
+  setTimeout(showMenuScreen, 1800);
+}
+
+function quitToMenu() {
+  if (!state.running) return;
+  state.paused = false;
+  state.shopOpen = false;
+  state.running = false;
+  Sound.stopMusic();
+  showMenuScreen();
+}
+
+function restartGame() {
+  document.getElementById('pauseOverlay').style.display = 'none';
+  state.paused = false;
+  startGame(state.timedMode);
+}
+
+// ====== آپگرید ======
+const UPGRADES = [
+  { id: 'radius', nameKey: 'upgradeRadius', base: 20, mult: 1.5, max: 6 },
+  { id: 'speed', nameKey: 'upgradeSpeed', base: 25, mult: 1.5, max: 6 },
+  { id: 'jump', nameKey: 'upgradeJump', base: 25, mult: 1.5, max: 6 }
+];
+
+function costOf(u) {
+  const lvl = run.upgrades[u.id] || 0;
+  return Math.floor(u.base * Math.pow(u.mult, lvl));
+}
+
+function renderIngameShop() {
+  const list = document.getElementById('igUpgList');
+  if (!list) return;
+  list.innerHTML = '';
+  document.getElementById('igCoins').textContent = run.coins;
+  for (const u of UPGRADES) {
+    const lvl = run.upgrades[u.id] || 0;
+    const maxed = lvl >= u.max;
+    const cost = costOf(u);
+    const canBuy = !maxed && run.coins >= cost;
+    const div = document.createElement('div');
+    div.className = 'upg';
+    div.innerHTML = `
+      <div class="info">
+        <div class="name">${t(u.nameKey)}</div>
+        <div class="lvl">${t('level')} ${lvl}/${u.max}</div>
+      </div>
+      <button ${canBuy ? '' : 'disabled'}>${maxed ? t('maxed') : '💰 ' + cost}</button>
+    `;
+    if (canBuy) {
+      div.querySelector('button').onclick = () => {
+        const c = costOf(u);
+        if (run.coins >= c && (run.upgrades[u.id] || 0) < u.max) {
+          run.coins -= c;
+          run.upgrades[u.id] = (run.upgrades[u.id] || 0) + 1;
+          Sound.upgrade();
+          renderIngameShop();
+          updateHUD();
+        }
+      };
+    }
+    list.appendChild(div);
+  }
+}
+
+// ====== کنترل ======
+const keys = { left: false, right: false };
+
+function setupControls() {
+  window.addEventListener('keydown', e => {
+    const k = e.key;
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = true;
+    if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = true;
+    if (k === 'Escape' || k === 'p' || k === 'P') { togglePause(); return; }
+    if (k === ' ' || k === 'ArrowUp' || k === 'w' || k === 'W') {
+      e.preventDefault();
+      if (!state.paused && !state.shopOpen) tryJump();
+    }
+  });
+  window.addEventListener('keyup', e => {
+    const k = e.key;
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = false;
+    if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = false;
+  });
+  window.addEventListener('blur', () => { keys.left = false; keys.right = false; });
+
+  bindHold(document.getElementById('leftbtn'), () => keys.left = true, () => keys.left = false);
+  bindHold(document.getElementById('rightbtn'), () => keys.right = true, () => keys.right = false);
+  bindHold(document.getElementById('jumpbtn'), () => { if (!state.paused && !state.shopOpen) tryJump(); }, null);
+
+  document.getElementById('pauseBtn').onclick = togglePause;
+  document.getElementById('resumeBtn').onclick = togglePause;
+  document.getElementById('restartBtn').onclick = restartGame;
+  document.getElementById('quitBtn').onclick = quitToMenu;
+
+  document.getElementById('upgradeBtn').onclick = openIngameShop;
+  document.getElementById('igClose').onclick = closeIngameShop;
+
+  document.getElementById('langBtn').onclick = toggleLang;
+
+  // ذخیره‌ی نام مستعار هنگام تایپ
+  const ni = document.getElementById('nicknameInput');
+  ni.addEventListener('input', () => saveNickname(ni.value));
+  ni.addEventListener('blur', () => saveNickname(ni.value));
+}
+
+function openIngameShop() {
+  if (!state.running || state.paused || state.timedMode) return;
+  state.shopOpen = true;
+  renderIngameShop();
+  document.getElementById('ingameShop').style.display = 'flex';
+}
+
+function closeIngameShop() {
+  state.shopOpen = false;
+  document.getElementById('ingameShop').style.display = 'none';
+}
+
+function togglePause() {
+  if (!state.running || state.shopOpen) return;
+  if (state.paused) {
+    state.paused = false;
+    document.getElementById('pauseOverlay').style.display = 'none';
+    Sound.startMusic();
+  } else {
+    state.paused = true;
+    Sound.stopMusic();
+    document.getElementById('pauseOverlay').style.display = 'flex';
+  }
+}
+
+function bindHold(el, downFn, upFn) {
+  let isDown = false;
+  function down(e) {
+    e.preventDefault();
+    if (isDown) return;
+    isDown = true;
+    el.classList.add('pressed');
+    if (el.setPointerCapture && e.pointerId !== undefined) {
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    downFn && downFn();
+  }
+  function up(e) {
+    if (e) e.preventDefault();
+    if (!isDown) return;
+    isDown = false;
+    el.classList.remove('pressed');
+    upFn && upFn();
+  }
+  el.addEventListener('pointerdown', down);
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+  el.addEventListener('lostpointercapture', up);
+  el.addEventListener('touchstart', e => { if (!window.PointerEvent) down(e); }, { passive: false });
+  el.addEventListener('touchend', e => { if (!window.PointerEvent) up(e); }, { passive: false });
+  el.addEventListener('mousedown', e => { if (!window.PointerEvent) down(e); });
+  window.addEventListener('mouseup', () => { if (!window.PointerEvent) up(); });
+}
+
+function tryJump() {
+  if (!state.running || state.paused || state.shopOpen) return;
+  if (state.grounded) {
+    state.velY = CFG.jumpV + run.upgrades.jump * 1.1;
+    state.grounded = false;
+    Sound.jump();
+  }
+}
+
+// ====== شروع ======
+function startGame(timed = false) {
+  Sound.resume();
+  Sound.startMusic();
+  // ذخیره‌ی نام فعلی
+  const ni = document.getElementById('nicknameInput');
+  if (ni) saveNickname(ni.value.trim());
+
+  state.timedMode = timed;
+  state.timer = timed ? CFG.timedDuration : 0;
+  buildWorld();
+  state.running = true;
+  state.paused = false;
+  state.shopOpen = false;
+  state.hitFreeze = 0;
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('pauseOverlay').style.display = 'none';
+  document.getElementById('ingameShop').style.display = 'none';
+  document.getElementById('hud').style.display = 'block';
+  const ub = document.getElementById('upgradeBtn');
+  if (timed) {
+    ub.style.display = 'none';
+    document.getElementById('timerPill').style.display = 'flex';
+  } else {
+    ub.style.display = 'flex';
+    document.getElementById('timerPill').style.display = 'none';
+  }
+  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    document.getElementById('controls').style.display = 'block';
+  }
+  camCurrentY = Math.sin(state.angle) * CFG.playerR * CFG.camFollow;
+  camera.position.set(
+    Math.cos(state.angle) * CFG.playerR * CFG.camFollow,
+    camCurrentY,
+    CFG.camZ
+  );
+  camera.lookAt(camera.position.x, camera.position.y, 0);
+  updateHUD();
+  updateTimerHUD();
+}
+
+// ====== حلقه ======
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if (state.running && !state.paused && !state.shopOpen) {
+    if (state.hitFreeze > 0) {
+      state.hitFreeze -= dt;
+    } else {
+      updatePlayer(dt);
+      updateCollectibles(dt);
+      updateObstacleCooldowns(dt);
+      animateObstacles(dt);
+      updateTimer(dt);
+
+      const baseFollowY = Math.sin(state.angle) * CFG.playerR * CFG.camFollow;
+      const jumpFollowY = Math.sin(state.angle) * state.jumpH * CFG.jumpFollow;
+      const targetY = baseFollowY + jumpFollowY;
+      const targetX = Math.cos(state.angle) * CFG.playerR * CFG.camFollow;
+
+      const smooth = Math.min(1, dt * 7);
+      camera.position.x += (targetX - camera.position.x) * smooth;
+      camCurrentY += (targetY - camCurrentY) * smooth;
+      camera.position.y = camCurrentY;
+      camera.position.z = CFG.camZ;
+
+      if (cameraShake > 0) {
+        cameraShake -= dt * 2;
+        const s = cameraShake * 0.4;
+        camera.position.x += (Math.random() - 0.5) * s;
+        camera.position.y += (Math.random() - 0.5) * s;
+        if (cameraShake < 0) cameraShake = 0;
+      }
+      camera.lookAt(camera.position.x, camera.position.y, 0);
+    }
+  } else if (!state.running && planetGroup) {
+    const t2 = clock.elapsedTime * 0.15;
+    camera.position.x = Math.sin(t2) * 2;
+    camera.position.y = Math.cos(t2) * 1;
+    camera.position.z = CFG.camZ;
+    camera.lookAt(0, 0, 0);
+  }
+
+  if (stars) stars.rotation.z += dt * 0.008;
+  renderer.render(scene, camera);
+}
+
+// ====== راه‌اندازی ======
+function boot() {
+  const setLoader = (txt) => {
+    const l = document.getElementById('loader');
+    if (l) l.textContent = txt;
+  };
+  try {
+    setLoader('راه‌اندازی گرافیک...');
+    initThree();
+    setLoader('ساخت جهان...');
+    buildWorld();
+    setLoader('تنظیم کنترل...');
+    setupControls();
+
+    document.getElementById('playBtn').onclick = () => startGame(false);
+    document.getElementById('timedBtn').onclick = () => startGame(true);
+    document.getElementById('cleanCount').textContent = save.cleans;
+
+    // بارگذاری نام مستعار ذخیره‌شده
+    document.getElementById('nicknameInput').value = loadNickname();
+
+    applyLanguage();
+
+    document.getElementById('loader').style.display = 'none';
+    animate();
+  } catch (err) {
+    setLoader('خطا: ' + (err.message || err));
+    console.error(err);
+  }
+}
+
+function tryBoot() {
+  if (typeof THREE === 'undefined') {
+    const l = document.getElementById('loader');
+    if (l) l.textContent = 'خطا: Three.js بارگذاری نشد. اتصال اینترنت را بررسی کنید.';
+    return;
+  }
+  try { boot(); }
+  catch (err) {
+    const l = document.getElementById('loader');
+    if (l) l.textContent = 'خطا: ' + (err.message || err);
+    console.error(err);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(tryBoot, 30));
+} else {
+  setTimeout(tryBoot, 30);
+}
+
+setTimeout(() => {
+  const loader = document.getElementById('loader');
+  if (!loader || loader.style.display === 'none') return;
+  const txt = loader.textContent || '';
+  if (txt.indexOf('بارگذاری') !== -1 || txt.indexOf('Loading') !== -1 ||
+      txt.indexOf('راه‌اندازی') !== -1 || txt.indexOf('ساخت') !== -1 ||
+      txt.indexOf('تنظیم') !== -1 || txt.indexOf('گرافیک') !== -1) {
+    if (typeof THREE === 'undefined') {
+      loader.textContent = 'خطا: Three.js لود نشد — اتصال اینترنت را بررسی کنید.';
+    } else {
+      loader.textContent = 'مشکلی پیش آمد — لطفاً صفحه را رفرش کنید.';
+    }
+  }
+}, 8000);
+</script>
+</body>
+</html>
