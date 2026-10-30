@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Momasoja | توسعه‌دهنده</title>
-<meta name="description" content="سایت شخصی Momasoja، توسعه‌دهنده اپلیکیشن و سازنده محتوا.">
+<meta name="description" content="سایت شخصی Momasoja، توسعه‌دهنده اپلیکیشن و بازی.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👨‍💻</text></svg>">
 
 <!-- فونت وزیرمتن -->
@@ -19,6 +19,7 @@
   --muted: #8b8b9e;
   --accent: #7c5cff;
   --accent-glow: rgba(124, 92, 255, 0.4);
+  --green: #2be08a;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -105,10 +106,11 @@ h1 {
   margin-bottom: 24px;
 }
 
-/* دکمه آپارات */
+/* دکمه‌ها */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: var(--card);
   color: var(--text);
@@ -118,6 +120,8 @@ h1 {
   border: 1px solid var(--border);
   font-weight: 600;
   transition: 0.3s;
+  font-family: inherit;
+  cursor: pointer;
 }
 .btn:hover {
   background: var(--accent);
@@ -126,11 +130,11 @@ h1 {
   transform: translateY(-3px);
 }
 
-/* بخش اپلیکیشن‌ها */
-.apps-section {
+/* بخش‌های بازی‌ها */
+.games-section {
   width: 100%;
   max-width: 900px;
-  padding: 40px 20px 80px;
+  padding: 20px 20px 40px;
 }
 
 .section-title {
@@ -146,21 +150,28 @@ h1 {
   overflow-x: auto;
   padding: 10px 20px 20px;
   scroll-snap-type: x mandatory;
-  scrollbar-width: none; /* فایرفاکس */
+  scrollbar-width: none;
 }
-.apps-row::-webkit-scrollbar { display: none; } /* کروم و سافاری */
+.apps-row::-webkit-scrollbar { display: none; }
 
 .app-card {
   flex: 0 0 220px;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 20px;
+  padding: 16px;
   text-align: center;
   scroll-snap-align: start;
   transition: 0.3s;
-  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
+
+.app-card.clickable { cursor: pointer; }
+
 .app-card:hover {
   border-color: var(--accent);
   transform: translateY(-5px);
@@ -168,31 +179,124 @@ h1 {
 }
 
 .app-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 20px;
-  margin: 0 auto 16px;
+  width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 16px;
+  margin-bottom: 16px;
   background: linear-gradient(135deg, #23232f, #13131a);
   border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 3rem;
+  object-fit: cover;
+  overflow: hidden;
+}
+
+.app-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .app-name {
   font-size: 1.1rem;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .app-status {
   font-size: 0.8rem;
-  color: #ff3d81;
-  background: rgba(255, 61, 129, 0.1);
   padding: 4px 12px;
   border-radius: 20px;
   display: inline-block;
+  margin-top: auto;
+}
+
+.status-soon {
+  color: #ff3d81;
+  background: rgba(255, 61, 129, 0.1);
+}
+
+.status-ready {
+  color: var(--green);
+  background: rgba(43, 224, 138, 0.1);
+}
+
+/* پاپ‌آپ (Modal) برای لینک‌های بازی */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.3s;
+  z-index: 1000;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  transform: translateY(20px);
+  transition: 0.3s;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.modal-overlay.active .modal-content {
+  transform: translateY(0);
+}
+
+.close-modal {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: 0.2s;
+  line-height: 1;
+}
+html[dir="rtl"] .close-modal { right: auto; left: 16px; }
+.close-modal:hover { color: var(--text); }
+
+.modal-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.modal-content p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+.modal-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-links .btn {
+  width: 100%;
 }
 
 /* فوتر */
@@ -206,7 +310,7 @@ footer {
   width: 100%;
 }
 
-/* حالت راست‌چین و چپ‌چین */
+/* تغییرات LTR */
 html[dir="ltr"] .section-title { border-right: none; border-left: 4px solid var(--accent); padding-right: 0; padding-left: 20px; }
 html[dir="ltr"] .lang-toggle { left: auto; right: 24px; }
 </style>
@@ -219,14 +323,14 @@ html[dir="ltr"] .lang-toggle { left: auto; right: 24px; }
 <!-- بخش معرفی -->
 <header class="hero">
   <div class="avatar-container">
-    <!-- اسم عکسی که ذخیره کردی باید avatar.jpg باشه -->
+    <!-- عکس پروفایل: avatar.png -->
     <img src="avatar.png" alt="Momasoja" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=M&background=7c5cff&color=fff&size=130'">
   </div>
   
   <h1>Momasoja</h1>
   
-  <p class="title" data-fa="توسعه‌دهنده اپلیکیشن و سازنده محتوا" data-en="App Developer & Content Creator">
-    توسعه‌دهنده اپلیکیشن و سازنده محتوا
+  <p class="title" data-fa="توسعه‌دهنده اپلیکیشن و بازی" data-en="App & Game Developer">
+    توسعه‌دهنده اپلیکیشن و بازی
   </p>
 
   <a href="https://www.aparat.com/Momasoja/" target="_blank" class="btn">
@@ -235,31 +339,55 @@ html[dir="ltr"] .lang-toggle { left: auto; right: 24px; }
   </a>
 </header>
 
-<!-- بخش اپلیکیشن‌ها -->
-<section class="apps-section">
-  <h2 class="section-title" data-fa="اپلیکیشن‌ها" data-en="Applications">اپلیکیشن‌ها</h2>
-  
+<!-- بخش بازی‌های اندروید -->
+<section class="games-section">
+  <h2 class="section-title" data-fa="بازی‌های اندروید" data-en="Android Games">بازی‌های اندروید</h2>
   <div class="apps-row">
     
-    <!-- کارت اپ ۱ -->
+    <!-- کارت خالی (اندروید) -->
     <div class="app-card">
       <div class="app-icon">📱</div>
-      <div class="app-name" data-fa="اپلیکیشن اول" data-en="App One">اپلیکیشن اول</div>
-      <span class="app-status" data-fa="در دست ساخت" data-en="In Development">در دست ساخت</span>
+      <div class="app-name" data-fa="در دست ساخت" data-en="Coming Soon">در دست ساخت</div>
+      <span class="app-status status-soon" data-fa="به زودی" data-en="Soon">به زودی</span>
     </div>
 
-    <!-- کارت اپ ۲ -->
+    <!-- کارت خالی (اندروید) -->
     <div class="app-card">
       <div class="app-icon">⚙️</div>
-      <div class="app-name" data-fa="اپلیکیشن دوم" data-en="App Two">اپلیکیشن دوم</div>
-      <span class="app-status" data-fa="در دست ساخت" data-en="In Development">در دست ساخت</span>
+      <div class="app-name" data-fa="در دست ساخت" data-en="Coming Soon">در دست ساخت</div>
+      <span class="app-status status-soon" data-fa="به زودی" data-en="Soon">به زودی</span>
     </div>
 
-    <!-- کارت اپ ۳ -->
+  </div>
+</section>
+
+<!-- بخش بازی‌های تحت وب -->
+<section class="games-section">
+  <h2 class="section-title" data-fa="بازی‌های تحت وب" data-en="Web Games">بازی‌های تحت وب</h2>
+  <div class="apps-row">
+    
+    <!-- بازی Eco Orbit -->
+    <!-- فایل عکس: eco-orbit.png -->
+    <div class="app-card clickable" onclick="openModal('Eco Orbit', 'https://playfrog.gg/g/eco-orbit', 'https://momasoja.github.io/Eco-Orbit/')">
+      <div class="app-icon">
+        <img src="eco-orbit.png" alt="Eco Orbit" onerror="this.style.display='none'; this.parentElement.innerHTML='🌍';">
+      </div>
+      <div class="app-name">Eco Orbit</div>
+      <span class="app-status status-ready" data-fa="آماده بازی" data-en="Play Now">آماده بازی</span>
+    </div>
+
+    <!-- کارت خالی (وب) -->
     <div class="app-card">
-      <div class="app-icon">🚀</div>
-      <div class="app-name" data-fa="اپلیکیشن سوم" data-en="App Three">اپلیکیشن سوم</div>
-      <span class="app-status" data-fa="در دست ساخت" data-en="In Development">در دست ساخت</span>
+      <div class="app-icon">🌐</div>
+      <div class="app-name" data-fa="در دست ساخت" data-en="Coming Soon">در دست ساخت</div>
+      <span class="app-status status-soon" data-fa="به زودی" data-en="Soon">به زودی</span>
+    </div>
+
+    <!-- کارت خالی (وب) -->
+    <div class="app-card">
+      <div class="app-icon">🕹️</div>
+      <div class="app-name" data-fa="در دست ساخت" data-en="Coming Soon">در دست ساخت</div>
+      <span class="app-status status-soon" data-fa="به زودی" data-en="Soon">به زودی</span>
     </div>
 
   </div>
@@ -269,7 +397,28 @@ html[dir="ltr"] .lang-toggle { left: auto; right: 24px; }
   <span data-fa="ساخته شده با ❤️ توسط Momasoja" data-en="Made with ❤️ by Momasoja">ساخته شده با ❤️ توسط Momasoja</span>
 </footer>
 
+<!-- پاپ‌آپ لینک‌ها -->
+<div class="modal-overlay" id="linkModal" onclick="if(event.target===this) closeModal()">
+  <div class="modal-content">
+    <button class="close-modal" onclick="closeModal()">&times;</button>
+    <h3 id="modalTitle">Eco Orbit</h3>
+    <p data-fa="یکی از منابع زیر را برای بازی انتخاب کنید:" data-en="Choose a source below to play:">یکی از منابع زیر را برای بازی انتخاب کنید:</p>
+    
+    <div class="modal-links">
+      <a id="modalSource1" href="#" target="_blank" class="btn">
+        <span style="font-size: 1.2rem;">🎮</span> 
+        <span data-fa="منبع اول (Playfrog)" data-en="Source 1 (Playfrog)">منبع اول (Playfrog)</span>
+      </a>
+      <a id="modalSource2" href="#" target="_blank" class="btn">
+        <span style="font-size: 1.2rem;">🌐</span> 
+        <span data-fa="منبع دوم (GitHub)" data-en="Source 2 (GitHub)">منبع دوم (GitHub)</span>
+      </a>
+    </div>
+  </div>
+</div>
+
 <script>
+  // --- تغییر زبان ---
   let isFa = true;
 
   function toggleLang() {
@@ -277,18 +426,41 @@ html[dir="ltr"] .lang-toggle { left: auto; right: 24px; }
     const html = document.documentElement;
     const btn = document.getElementById('langBtn');
     
-    // تغییر جهت صفحه
     html.dir = isFa ? 'rtl' : 'ltr';
     html.lang = isFa ? 'fa' : 'en';
     
-    // تغییر متن دکمه
     btn.innerText = isFa ? 'English' : 'فارسی';
     
-    // تغییر تمام متن‌های دارای data-fa و data-en
     document.querySelectorAll('[data-fa]').forEach(el => {
       el.innerText = isFa ? el.getAttribute('data-fa') : el.getAttribute('data-en');
     });
   }
+
+  // --- مدیریت پاپ‌آپ (Modal) ---
+  const modal = document.getElementById('linkModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const source1 = document.getElementById('modalSource1');
+  const source2 = document.getElementById('modalSource2');
+
+  function openModal(title, url1, url2) {
+    modalTitle.innerText = title;
+    source1.href = url1;
+    source2.href = url2;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // جلوگیری از اسکرول پس‌زمینه
+  }
+
+  function closeModal() {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  // بستن با کلید Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('active')) {
+      closeModal();
+    }
+  });
 </script>
 
 </body>
